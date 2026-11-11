@@ -125,14 +125,15 @@ All in English, light theme, 412x915 logical px at device pixel ratio 3.
   calls on every project widget above a finding. That one file is declared
   "not project code" to the widget inspector so the audit steps over it.
 - **When the audit's own re-layout makes the app throw.** With flutter-a11y
-  0.4.1 (the version pinned here) a reflow pass during which the app raises
+  0.4.2 (the version pinned here) a reflow pass during which the app raises
   anything other than an overflow is aborted and contributes no finding; the
   other passes and every other phase keep theirs, and `auditScreen` throws
   `A11yReflowException` with that result, which the harness keeps as the
   screen's (the result carries a `reflow-pass-aborted` diagnostic).
-  `rulesNotRun` in the screen log names the rules whose pass did not complete:
-  the aborted ones, plus the 320 px pass when the library stopped because the
-  view could not be put back after the scale pass. `exceptions` has one
+  `rulesNotRun` in the screen log names the rule of every pass the library
+  reports in `failures`: the aborted ones, and each pass not attempted because
+  the view could not be put back after an earlier one (the library reports it
+  as `ReflowPassNotAttempted`). `exceptions` has one
   `reflow pass aborted (<pass>): <error>` line per failure the library
   reports. Any other error from the audit is handled as with 0.4.0: the screen
   is audited again without the reflow passes, and the log says so. Today: six

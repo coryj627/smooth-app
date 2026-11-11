@@ -429,21 +429,12 @@ Future<A11yAuditResult?> audit(
       break;
     } on A11yReflowException catch (error) {
       result = error.result;
-      // The scale pass runs before the 320 px pass.  When the view cannot be
-      // put back after a pass ("restoring after <pass>"), the library stops
-      // there without a failure entry for the passes it skipped, so those
-      // are added here.
-      const passOrder = [
-        RuleIds.textOverflowAtScale,
-        RuleIds.contentOverflowAtReflowWidth,
-      ];
+      // `failures` names every pass that did not complete: the aborted ones,
+      // and (since 0.4.2) each pass not attempted because the view could not
+      // be put back after an earlier one (`ReflowPassNotAttempted`).
       rulesNotRun = {
         ...rules,
-        for (final failure in error.failures) ...[
-          failure.ruleId,
-          if (failure.pass.startsWith('restoring after '))
-            ...passOrder.skip(passOrder.indexOf(failure.ruleId) + 1),
-        ],
+        for (final failure in error.failures) failure.ruleId,
       }.toList()..sort();
       for (final failure in error.failures) {
         exceptions.add(
