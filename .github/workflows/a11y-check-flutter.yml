@@ -1,0 +1,91 @@
+# Dogfood workflow for the a11y-dogfood branch of the openfoodfacts/smooth-app
+# fork: runs the runtime accessibility audit in packages/smooth_app/test/a11y/
+# and scans the app with a11y-check-flutter.  Prepared for later: the branch
+# has not been pushed, and no .a11y/flutter/baseline.json has been accepted
+# yet, so expect the first run to fail on every finding until a baseline is
+# committed (see packages/smooth_app/test/a11y/README.md).
+#
+# The Flutter app is not at the repository root: everything runs in
+# packages/smooth_app (`working-directory`).  Only test/a11y is run before the
+# scan (`test-args`): the rest of the app's suite records no findings.
+#
+# The app's database goes through sqflite_common_ffi under `flutter test`,
+# which loads the system's libsqlite3; the runner gets the development package
+# so that `libsqlite3.so` exists.
+#
+# One-time setup in the repository this runs in:
+#   1. Secret FLUTTER_A11Y_READ_TOKEN: a fine-grained PAT with Contents: Read-only
+#      on coryj627/flutter-a11y (private). It lets `pub get` fetch flutter_a11y_test
+#      and `dart pub global activate` fetch the CLI.
+#   2. Code scanning must be enabled for the SARIF upload step.
+#
+# coryj627/flutter-a11y is private: a public repository can never `uses:` an
+# action from a private one, so the action is checked out with the read token
+# and run as a local action.
+#
+# The two `ref:` values and the flutter_a11y_test entry in
+# packages/smooth_app/pubspec.yaml are pinned to the same commit of
+# flutter-a11y; a release tag will replace it.
+name: a11y-check-flutter
+
+on:
+  push:
+    branches: [a11y-dogfood]
+  pull_request:
+    branches: [a11y-dogfood]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write # github/codeql-action/upload-sarif
+
+jobs:
+  a11y:
+    name: a11y-check-flutter
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # The Flutter version the app pins, from ./flutter-version.txt.
+      - run: echo "FLUTTER_VERSION=$(cat flutter-version.txt)" >> $GITHUB_OUTPUT
+        id: flutter-version
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ steps.flutter-version.outputs.FLUTTER_VERSION }}
+          cache: true
+
+      - name: SQLite for the app's database under flutter test
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: Read access to coryj627/flutter-a11y (private)
+        env:
+          TOKEN: ${{ secrets.FLUTTER_A11Y_READ_TOKEN }}
+        run: |
+          git config --global url."https://x-access-token:${TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Fetch the a11y-check-flutter action
+        uses: actions/checkout@v4
+        with:
+          repository: coryj627/flutter-a11y
+          ref: 5d9d3d0cb993998f8bf45632ebb4f09e7f619b6d
+          token: ${{ secrets.FLUTTER_A11Y_READ_TOKEN }}
+          path: .flutter-a11y
+
+      - name: Scan (pub get → flutter test test/a11y → a11y_check_flutter scan)
+        id: a11y
+        uses: ./.flutter-a11y
+        with:
+          working-directory: packages/smooth_app
+          ref: 5d9d3d0cb993998f8bf45632ebb4f09e7f619b6d
+          run-tests: "true"
+          test-args: test/a11y
+
+      - name: Upload SARIF to code scanning
+        if: always() && steps.a11y.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.a11y.outputs.sarif }}
+          category: a11y-check-flutter

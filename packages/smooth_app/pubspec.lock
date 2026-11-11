@@ -530,6 +530,24 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_a11y_core:
+    dependency: transitive
+    description:
+      path: "packages/flutter_a11y_core"
+      ref: "5d9d3d0cb993998f8bf45632ebb4f09e7f619b6d"
+      resolved-ref: "5d9d3d0cb993998f8bf45632ebb4f09e7f619b6d"
+      url: "https://github.com/coryj627/flutter-a11y.git"
+    source: git
+    version: "0.3.0"
+  flutter_a11y_test:
+    dependency: "direct dev"
+    description:
+      path: "packages/flutter_a11y_test"
+      ref: "5d9d3d0cb993998f8bf45632ebb4f09e7f619b6d"
+      resolved-ref: "5d9d3d0cb993998f8bf45632ebb4f09e7f619b6d"
+      url: "https://github.com/coryj627/flutter-a11y.git"
+    source: git
+    version: "0.3.0"
   flutter_animation_progress_bar:
     dependency: "direct main"
     description:
