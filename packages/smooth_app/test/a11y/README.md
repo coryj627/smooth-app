@@ -128,7 +128,7 @@ All in English, light theme, 412x915 logical px at device pixel ratio 3.
   that exclusion is gone: no finding moved, and `widgetPath` names
   `Provider<FileLoader>` again.
 - **When the audit's own re-layout makes the app throw.** With flutter-a11y
-  0.5.0 (the version pinned here) a reflow pass during which the app raises
+  0.5.1 (the version pinned here) a reflow pass during which the app raises
   anything other than an overflow is aborted and contributes no finding; the
   other passes and every other phase keep theirs, and `auditScreen` throws
   `A11yReflowException` with that result, which the harness keeps as the
