@@ -190,13 +190,6 @@ abstract final class Smooth {
     // box of the size the animation would fill, which is what the app's own
     // "animation failed to load" branch shows.  Every other build error
     // keeps Flutter's red error box.
-    //
-    // The failed animation loader also breaks the diagnostics of the
-    // provider that holds it (`RiveAnimationsLoader`), which the audit would
-    // read for every finding below it; see [attributeToLibExcept].
-    attributeToLibExcept(<String>[
-      'lib/generic_lib/animations/rive_animation.dart',
-    ]);
     _errorWidgetBuilder = ErrorWidget.builder;
     final ErrorWidgetBuilder previous = ErrorWidget.builder;
     // Every error the framework catches, one by one: `takeException` only

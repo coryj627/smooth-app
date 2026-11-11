@@ -119,13 +119,16 @@ All in English, light theme, 412x915 logical px at device pixel ratio 3.
   whole; a collapsing header cannot be grown away and is left as it is.
 - **Audit configuration**: library defaults, both platform tap-target
   guidelines (`platform: null`), reflow on, `sourceRoots` = `lib/`.
-- **Attribution never lands in `lib/generic_lib/animations/rive_animation.dart`.**
-  With no Rive renderer the app's `Provider<FileLoader>` fails to create its
-  value, and provider then throws from `debugFillProperties`, which the audit
-  calls on every project widget above a finding. That one file is declared
-  "not project code" to the widget inspector so the audit steps over it.
+- **Attribution covers all of `lib/`.** With no Rive renderer the app's
+  `Provider<FileLoader>` fails to create its value, and provider then throws
+  from `debugFillProperties`. Up to flutter-a11y 0.4.2 the audit called that on
+  every project widget above a finding, so the harness declared
+  `lib/generic_lib/animations/rive_animation.dart` "not project code" to the
+  widget inspector. Since 0.5.0 the audit reads only the creation location, and
+  that exclusion is gone: no finding moved, and `widgetPath` names
+  `Provider<FileLoader>` again.
 - **When the audit's own re-layout makes the app throw.** With flutter-a11y
-  0.4.2 (the version pinned here) a reflow pass during which the app raises
+  0.5.0 (the version pinned here) a reflow pass during which the app raises
   anything other than an overflow is aborted and contributes no finding; the
   other passes and every other phase keep theirs, and `auditScreen` throws
   `A11yReflowException` with that result, which the harness keeps as the
@@ -147,11 +150,13 @@ All in English, light theme, 412x915 logical px at device pixel ratio 3.
 - **Exceptions are evidence.** Framework-caught errors and errors nobody
   catches are listed on the screen they happened on (`exceptions`,
   `exceptionsWhileLeaving`), not hidden and not fatal.
-- **Offstage tabs are in the tree.** The three tabs live in an `IndexedStack`,
-  and the audit's overflow detection also measures the two that are not shown.
-  The same three sites (`scan_header.dart:64` and `:87`,
-  `profile_app_bar.dart:133`) are therefore reported on almost every screen:
-  521 of the 613 overflow findings.
+- **Offstage tabs are in the tree.** The three tabs live in an `IndexedStack`.
+  Up to flutter-a11y 0.4.2 the audit's overflow detection also measured the
+  two that are not shown, so the same three sites (`scan_header.dart:64` and
+  `:87`, `profile_app_bar.dart:133`) were reported on almost every screen
+  (521 of the 613 overflow findings). Since 0.5.0 it skips content that is not
+  painted (other tabs, pages below an opaque route): 43 overflow findings
+  remain, 21 of them at those sites on the 7 screens that show them.
 - **Sheets and the 320 px pass.** A draggable sheet shrinks to its header when
   the screen size changes, so the reflow pass of a sheet measures it shrunk.
 

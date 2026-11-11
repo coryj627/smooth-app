@@ -51,35 +51,6 @@ A11yAuditConfig _without(Set<String> rules) => A11yAuditConfig(
   },
 );
 
-/// Tells Flutter's widget inspector that every file under `lib/` is project
-/// code except [files] (paths relative to the package).
-///
-/// The audit asks the inspector for the creation location of each project
-/// widget above a finding, which serializes the widget's diagnostics.  A
-/// widget whose diagnostics throw would end the audit; leaving its file out
-/// makes the audit step over it.  Findings are then never attributed to
-/// [files], but to the nearest project widget above.
-void attributeToLibExcept(List<String> files) {
-  final root = Directory.current.path;
-  final excluded = {for (final f in files) '$root/$f'};
-  final roots = <String>[];
-  void visit(Directory dir) {
-    for (final entity in dir.listSync()) {
-      if (excluded.contains(entity.path)) continue;
-      if (entity is Directory &&
-          excluded.any((e) => e.startsWith('${entity.path}/'))) {
-        visit(entity);
-      } else {
-        roots.add(entity is Directory ? '${entity.path}/' : entity.path);
-      }
-    }
-  }
-
-  visit(Directory('$root/lib'));
-  // ignore: invalid_use_of_protected_member
-  WidgetInspectorService.instance.addPubRootDirectories(roots);
-}
-
 /// Loads the fonts the app ships, plus the two Material fonts from the
 /// Flutter SDK, so text is measured as on a device rather than in the
 /// `FlutterTest` font (every glyph a 1 em square).
