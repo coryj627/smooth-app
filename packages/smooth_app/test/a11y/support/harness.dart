@@ -397,8 +397,11 @@ Future<A11yAuditResult?> audit(
 
   // The audit lays the screen out again at 200 % text and at 320 px wide.
   // If the app throws something other than an overflow while it does, the
-  // library rethrows it and the screen would be lost.  The screen is then
-  // audited again without the pass that threw, and the log says so.
+  // library aborts that pass (it contributes no finding), runs the others,
+  // records the result to the sink and throws `A11yReflowException`.  That
+  // result is the screen's; the aborted passes' rules go to `rulesNotRun` and
+  // their errors to `exceptions`.  Any other error is handled as before: the
+  // screen is audited again without the reflow passes, and the log says so.
   A11yAuditResult? result;
   var rulesNotRun = const <String>[];
   final attempts = <(List<String>, A11yAuditConfig)>[
@@ -423,6 +426,37 @@ Future<A11yAuditResult?> audit(
     try {
       result = await auditScreen(tester, screenId: screenId, config: config);
       rulesNotRun = rules;
+      break;
+    } on A11yReflowException catch (error) {
+      result = error.result;
+      // The scale pass runs before the 320 px pass.  When the view cannot be
+      // put back after a pass ("restoring after <pass>"), the library stops
+      // there without a failure entry for the passes it skipped, so those
+      // are added here.
+      const passOrder = [
+        RuleIds.textOverflowAtScale,
+        RuleIds.contentOverflowAtReflowWidth,
+      ];
+      rulesNotRun = {
+        ...rules,
+        for (final failure in error.failures) ...[
+          failure.ruleId,
+          if (failure.pass.startsWith('restoring after '))
+            ...passOrder.skip(passOrder.indexOf(failure.ruleId) + 1),
+        ],
+      }.toList()..sort();
+      for (final failure in error.failures) {
+        exceptions.add(
+          'reflow pass aborted (${failure.pass}): '
+          '${describeException(failure.error)}',
+        );
+      }
+      // Back to the size and text scale the screen was pumped at.
+      tester.view.physicalSize = viewSize * tester.view.devicePixelRatio;
+      tester.platformDispatcher.clearTextScaleFactorTestValue();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      take();
       break;
     } on Object catch (error) {
       exceptions.add(

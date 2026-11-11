@@ -124,14 +124,25 @@ All in English, light theme, 412x915 logical px at device pixel ratio 3.
   value, and provider then throws from `debugFillProperties`, which the audit
   calls on every project widget above a finding. That one file is declared
   "not project code" to the widget inspector so the audit steps over it.
-- **When the audit's own re-layout makes the app throw.** The library rethrows
-  anything that is not an overflow, which would lose the screen. The screen is
-  then audited again without the pass that threw; `rulesNotRun` in the screen
-  log names it. Today: six edit screens without the 320 px pass
+- **When the audit's own re-layout makes the app throw.** With flutter-a11y
+  0.4.1 (the version pinned here) a reflow pass during which the app raises
+  anything other than an overflow is aborted and contributes no finding; the
+  other passes and every other phase keep theirs, and `auditScreen` throws
+  `A11yReflowException` with that result, which the harness keeps as the
+  screen's (the result carries a `reflow-pass-aborted` diagnostic).
+  `rulesNotRun` in the screen log names the rules whose pass did not complete:
+  the aborted ones, plus the 320 px pass when the library stopped because the
+  view could not be put back after the scale pass. `exceptions` has one
+  `reflow pass aborted (<pass>): <error>` line per failure the library
+  reports. Any other error from the audit is handled as with 0.4.0: the screen
+  is audited again without the reflow passes, and the log says so. Today: six
+  edit screens without the 320 px pass
   (`_AutoScaleRenderObject does not meet its constraints`,
   `lib/widgets/auto_scale_widget.dart`), and `prices/product-prices` without
   either pass (a framework semantics assertion on every frame once semantics
-  are on; that screen has 2 findings and is in effect not audited).
+  are on: the scale pass aborts, putting the view back raises it again, and
+  the 320 px pass is not attempted; that screen has 2 findings and is in
+  effect not audited).
 - **Exceptions are evidence.** Framework-caught errors and errors nobody
   catches are listed on the screen they happened on (`exceptions`,
   `exceptionsWhileLeaving`), not hidden and not fatal.
